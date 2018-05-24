@@ -1,0 +1,35 @@
+
+
+- AFTER SATISFYING WITH THE SHELL
+	ls
+	cat 
+	less
+
+
+
+________________________
+- TASK ONE, 
+fnishing: 
+	input output redirection, 
+	making the file description, 
+________________________ 
+
+
+Project Proposal
+
+  1.	Description and Motivation.
+A description of your project, mentioning your motivation for
+choosing the project, and what you will learn by completing it. The
+goals should be stated unambiguously.  Remember, that all your goals
+must be met by the end of the semester, so keep them realistic.
+You should also mention what you would do if you happen to accomplish
+your original goals early.
+
+
+
+
+
+  2.	A list of the steps necessary to accomplish your project.
+Break up the project into a sequence of stages. Where will
+you start? What will you do next? What is the plan for finishing
+this project? Give a step-by-step plan.
