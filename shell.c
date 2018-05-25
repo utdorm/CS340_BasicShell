@@ -147,6 +147,7 @@ void cd_cmd(char *path)
     }
 }
 
+
 void redirectOutput(char *outputFile)
 {
     int fd;
@@ -197,4 +198,5 @@ void print_prompt()
 
 void help_cmd()
 {
+    
 }
