@@ -150,6 +150,7 @@ void cd_cmd(char *path)
 
 void redirectOutput(char *outputFile)
 {
+    printf("-----Found output redirect Flag-----\n");
     int fd;
     int openFlags = O_CREAT | O_WRONLY | O_TRUNC;
     mode_t filePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP |
@@ -168,6 +169,7 @@ void redirectOutput(char *outputFile)
 
 void redirectInput(char *inputFile)
 {
+    printf("-----Found input redirect Flag-----\n");    
     int fd;
     int openFlags = O_RDONLY;
     mode_t filePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH; /* rw-rw-rw- */
@@ -180,7 +182,6 @@ void redirectInput(char *inputFile)
 
     if (dup2(fd, STDIN_FILENO) == -1)
         fprintf(stderr, "dup2 failed");
-
     close(fd);
 }
 
