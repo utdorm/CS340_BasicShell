@@ -142,8 +142,9 @@ void cd_cmd(char *path)
     }
     else
     {
+        // assume the "HOME" environment is exist
         if (chdir(getenv("HOME")))
-            perror("chdir err");
+            perror("chdir: Cannot find HOME environment in the list. ");
     }
 }
 
