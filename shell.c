@@ -1,3 +1,18 @@
+/**
+ * To do list: (Inside .pdf file of the project directory)
+ * 
+ * Question to be asked: 
+ *  Did you do what present(steps) in the paper?
+ *  Do you understand what you are doing?
+ *  Can you explain the pprojects to judges? 
+ * 
+ * 
+ * 
+ * 
+ * 
+ **/
+
+
 #include <sys/wait.h>
 #include <err.h>
 #include <signal.h>
@@ -10,6 +25,8 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
+
+
 /* Set limits to the buffer, for storing the arguments */
 #define MAXLINE 4096
 
@@ -20,16 +37,17 @@
 #define PATH_MAX 256
 
 /* Global variables here*/
-char *builtin_utilities[] = {"cd"};
+char *builtin_utilities[] = {"cd", "clear", "built-in"};
 char *inputFile;
 char *outputFile;
 
 /* Function declearation here */
-void parseArguments     (char *, char **);
-void launchShell        (char **argv, char *buf);
-void cd_cmd             (char *path);
-void redirectInput      (char *inputFile);
-void redirectOutput     (char *outputFile);
+void parseArguments(char *, char **);
+void launchShell(char **argv, char *buf);
+void cd_cmd(char *path);
+void redirectInput(char *inputFile);
+void redirectOutput(char *outputFile);
+void debugIO(char *file);
 void print_prompt();
 
 int main(void)
@@ -37,7 +55,7 @@ int main(void)
     char buf[MAXLINE];   //init buffer size to the MAXLINE availiable
     char *argv[MAXARGS]; //init the pointer to argv with the size of MAXARGS
     char cwd[PATH_MAX];  //init the size of cwd(get the current directory) to PATH_MAX
-    system("clear");
+    // system("clear");
     print_prompt();
 
     /* print the prompt with a welcome text with the Name and current working directory */
@@ -52,7 +70,7 @@ int main(void)
         int i;
         if ((strcmp(argv[0], "cd")) == 0) //flaged cd token found
             cd_cmd(argv[1]);
-
+            
         else
         {
             printf("-----Found non-built-in Flag-----\n");
@@ -70,7 +88,7 @@ int main(void)
  */
 void parseArguments(char *strBuf, char *inputVec[])
 {
-    static char *sep = " \t\n\b"; //the arguments seperator
+    static char *sep = " \t\n\b\r\a"; //the arguments seperator (extra special char to be safe)
     char *tok_start;
     inputFile = NULL;
     outputFile = NULL;
@@ -84,40 +102,44 @@ void parseArguments(char *strBuf, char *inputVec[])
             tok_start = strtok(NULL, sep); //next char to be pick
             outputFile = tok_start;
             tok_start = strtok(NULL, sep); //next char to be pick
+            debugIO(outputFile);
             break;
 
         case '<':
             tok_start = strtok(NULL, sep); //next char to be pick
             inputFile = tok_start;
             tok_start = strtok(NULL, sep); //next char to be pick
+            debugIO(inputFile);
+            break;
+
+        case '|':
+	    //store the next arguments/commands after '|' notations
+            //hint: ->recursive the parseArgument() again to get the 2nd commands  
+	    debugIO(inputFile);
             break;
 
         default:
-            *inputVec++ = tok_start;       //store the token into the input V=vector
+            *inputVec++ = tok_start;       //store the token into the input vector
             tok_start = strtok(NULL, sep); //next char to be pick
         }
         *inputVec = NULL;
     }
 }
 
-/**
- * init any non built-in functions 
- * eg, ls [-arg] ...
- */
 void launchShell(char **argv, char *buf)
 {
     pid_t pid;
     int status;
-    if ((pid = fork()) == -1)   
+    if ((pid = fork()) == -1)
         err(1, "fork error");
-    else if (pid == 0)          //fork() successful
-    { /* child */
+    else if (pid == 0) //fork() successful
+    {                  /* child */
         if (outputFile != NULL)
             redirectOutput(outputFile);
 
-        if (inputFile != NULL) 
+        if (inputFile != NULL)
             redirectInput(inputFile);
-        
+
         execvp(argv[0], argv);
         err(127, "couldn't execute: %s", argv[0]);
     }
@@ -148,7 +170,6 @@ void cd_cmd(char *path)
     }
 }
 
-
 void redirectOutput(char *outputFile)
 {
     printf("-----Found output redirect Flag-----\n");
@@ -170,7 +191,7 @@ void redirectOutput(char *outputFile)
 
 void redirectInput(char *inputFile)
 {
-    printf("-----Found input redirect Flag-----\n");    
+    printf("-----Found input redirect Flag-----\n");
     int fd;
     int openFlags = O_RDONLY;
     mode_t filePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH; /* rw-rw-rw- */
@@ -186,8 +207,6 @@ void redirectInput(char *inputFile)
     close(fd);
 }
 
-
-
 void print_prompt()
 {
     printf("\n************************************************************************");
@@ -200,5 +219,9 @@ void print_prompt()
 
 void help_cmd()
 {
-    
+}
+
+void debugIO(char *file)
+{
+    printf("\n --> File name found: %s\n", file);
 }
