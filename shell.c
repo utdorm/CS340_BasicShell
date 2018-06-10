@@ -114,7 +114,9 @@ void parseArguments(char *strBuf, char *inputVec[])
 
         case '|':
 	    //store the next arguments/commands after '|' notations
-            //hint: ->recursive the parseArgument() again to get the 2nd commands  
+        //hint: ->recursive the parseArgument() again to get the 2nd commands
+        
+        
 	    debugIO(inputFile);
             break;
 
@@ -189,7 +191,7 @@ void redirectOutput(char *outputFile)
     close(fd);
 }
 
-void redirectInput(char *inputFile)
+void redirectInput(char *inputFile)z
 {
     printf("-----Found input redirect Flag-----\n");
     int fd;
@@ -219,6 +221,7 @@ void print_prompt()
 
 void help_cmd()
 {
+    
 }
 
 void debugIO(char *file)

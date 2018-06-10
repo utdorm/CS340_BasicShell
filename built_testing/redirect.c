@@ -126,3 +126,4 @@ void init(char **argv, char *outputFile, char *inputfd)
     if ((pid = waitpid(pid, &status, 0)) == -1)
         err(1, "waitpid error");
 }
+
