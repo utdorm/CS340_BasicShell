@@ -12,20 +12,18 @@
  * 
  **/
 
-
 #include <sys/wait.h>
 #include <err.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-
-
 
 /* Set limits to the buffer, for storing the arguments */
 #define MAXLINE 4096
@@ -57,32 +55,35 @@ void redirectOutput(char *outputFile);
 void debugIO(char *file);
 void print_prompt();
 
-int main(void) {
+int main(void)
+{
     pipeCounter = 0;
     pipeFlag = false;
-    char buf[MAXLINE]; //init buffer size to the MAXLINE availiable
-    char *argv[MAXARGS]; //init the pointer to argv with the size of MAXARGS
+    char buf[MAXLINE];    //init buffer size to the MAXLINE availiable
+    char *argv[MAXARGS];  //init the pointer to argv with the size of MAXARGS
     char *argv2[MAXARGS]; //init the pointer to argv with the size of MAXARGS
-    char cwd[PATH_MAX]; //init the size of cwd(get the current directory) to PATH_MAX
+    char cwd[PATH_MAX];   //init the size of cwd(get the current directory) to PATH_MAX
     // system("clear");
     //    print_prompt();
 
     /* print the prompt with a welcome text with the Name and current working directory */
-    printf("\n⚡ %s  ↔%s", getenv("HOSTNAME"), getcwd(cwd, sizeof (cwd)));
+    printf("\n⚡ %s  ↔%s", getenv("HOSTNAME"), getcwd(cwd, sizeof(cwd)));
     printf("\n Welcome to CS340 $ ");
 
     /* loops the stdin for any arguments */
-    while (fgets(buf, MAXLINE, stdin) != NULL) {
+    while (fgets(buf, MAXLINE, stdin) != NULL)
+    {
         /* parse each argv[] into different tokens and store inside buf */
         parseArguments(buf, argv, argv2);
         if ((strcmp(argv[0], "cd")) == 0) //flaged cd token found
             cd_cmd(argv[1]);
-        else {
+        else
+        {
             printf("-----Found non-built-in Flag-----\n");
             launchShell(argv, argv2, buf);
         }
 
-        printf("\n⚡ %s  ↔%s", getenv("HOSTNAME"), getcwd(cwd, sizeof (cwd)));
+        printf("\n⚡ %s  ↔%s", getenv("HOSTNAME"), getcwd(cwd, sizeof(cwd)));
         printf("\n Welcome to CS340 $ ");
     }
     return 0;
@@ -91,7 +92,8 @@ int main(void) {
 /**
  * function to break input arugments into tokens
  */
-void parseArguments(char *strBuf, char *inputVec[], char *inputVec2[]) {
+void parseArguments(char *strBuf, char *inputVec[], char *inputVec2[])
+{
     static char *sep = " \t\n\b\r\a"; //the arguments seperator (extra special char to be safe)
     char *tok_start;
     inputFile = NULL;
@@ -100,99 +102,85 @@ void parseArguments(char *strBuf, char *inputVec[], char *inputVec2[]) {
 
     while (tok_start != NULL) //while reading the arguments
     {
-        switch (*tok_start) {
-            case '>':
+        switch (*tok_start)
+        {
+        case '>':
+            tok_start = strtok(NULL, sep); //next char to be pick
+            outputFile = tok_start;
+            tok_start = strtok(NULL, sep); //next char to be pick
+            debugIO(outputFile);
+            break;
+
+        case '<':
+            tok_start = strtok(NULL, sep); //next char to be pick
+            inputFile = tok_start;
+            tok_start = strtok(NULL, sep); //next char to be pick
+            debugIO(inputFile);
+            break;
+
+        case '|':
+            //store the next arguments/commands after '|' notations
+            //hint: ->recursive the parseArgument() again to get the 2nd commands
+
+            pipe(pipeFd);
+            pipeCounter++;
+            pipeFlag = true;
+            tok_start = strtok(NULL, sep);
+            *inputVec2++ = tok_start;      //store the token into the input vector
+            tok_start = strtok(NULL, sep); //next char to be pick
+            if (tok_start != NULL)
+            {
+                *inputVec2++ = tok_start;
                 tok_start = strtok(NULL, sep); //next char to be pick
-                outputFile = tok_start;
-                tok_start = strtok(NULL, sep); //next char to be pick
-                debugIO(outputFile);
+            }
+            else
                 break;
 
-            case '<':
-                tok_start = strtok(NULL, sep); //next char to be pick
-                inputFile = tok_start;
-                tok_start = strtok(NULL, sep); //next char to be pick
-                debugIO(inputFile);
-                break;
-
-            case '|':
-                //store the next arguments/commands after '|' notations
-                //hint: ->recursive the parseArgument() again to get the 2nd commands
-
-                pipe(pipeFd);
-                pipeCounter++;
-                tok_start = strtok(NULL, sep);
-                *inputVec2++ = tok_start; //store the token into the input vector
-                tok_start = strtok(NULL, sep); //next char to be pick
-                if (tok_start != NULL) {
-                    *inputVec2++ = tok_start;
-                    tok_start = strtok(NULL, sep); //next char to be pick
-                } else
-                    break;
-
-            default:
-                *inputVec++ = tok_start; //store the token into the input vector
-                tok_start = strtok(NULL, sep); //next char to be pick
+        default:
+            *inputVec++ = tok_start;       //store the token into the input vector
+            tok_start = strtok(NULL, sep); //next char to be pick
         }
         *inputVec = NULL;
     }
 }
 
-void launchShell(char **argv, char **argv2, char *buf) {
-    pid_t _1_pid;
+void launchShell(char **argv, char **argv2, char *buf)
+{
+    pid_t pid;
     int status;
-    if (pipeFlag) {
-        for (int i = 0; i < pipeCounter; i++) {
-if ((_1_pid = fork()) == 0) //fork() successful
-    { /* child */
-        dup2(pipeFd[WRITE_END], STDOUT_FILENO);
-	    close(pipeFd[READ_END]);
-        execvp(argv[0], argv);
-        err(127, "couldn't execute: %s", argv[0]);
+    if (pipeFlag)
+    {
+        for (int i = 0; i < pipeCounter; i++)
+        {
+            if ((pid = fork()) == 0) //fork() successful
+            {                           /* child */
+                dup2(pipeFd[WRITE_END], STDOUT_FILENO);
+                close(pipeFd[READ_END]);
+                execvp(argv[0], argv);
+                err(127, "couldn't execute: %s", argv[0]);
 
-    }//2nd Child process
-    else if ((_1_pid = fork()) == 0) {
-        dup2(pipeFd[READ_END], STDIN_FILENO);
-	    close(pipeFd[WRITE_END]);
-        execvp(argv2[0], argv2);
-        err(127, "couldn't execute: %s", argv2[0]);     
+            } //2nd Child process
+            else if ((pid = fork()) == 0)
+            {
+                dup2(pipeFd[READ_END], STDIN_FILENO);
+                close(pipeFd[WRITE_END]);
+                execvp(argv2[0], argv2);
+                err(127, "couldn't execute: %s", argv2[0]);
+            }
+
+            close(pipeFd[READ_END]);
+            close(pipeFd[WRITE_END]);
+
+            if ((pid = waitpid(pid, &status, 0)) == -1)
+                err(1, "waitpid error");
+        }
     }
-
-    close(pipeFd[READ_END]);
-    close(pipeFd[WRITE_END]);
-
-    if ((_1_pid = waitpid(_1_pid, &status, 0)) == -1)
-        err(1, "waitpid error");
-     
-    
-        
-        }
-        }
-    
 
     /*
     if ((pid = waitpid(pid, &status, 0)) == -1)
         err(1, "waitpid error");
      */
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /**
  * 
@@ -201,26 +189,32 @@ if ((_1_pid = fork()) == 0) //fork() successful
  * return the path if exist, else return to HOME 
  * 
  */
-void cd_cmd(char *path) {
+void cd_cmd(char *path)
+{
     printf("-----Found cd Flag-----\n");
-    if (path) {
+    if (path)
+    {
         if (chdir(path) != 0)
             perror("chdir err");
-    } else {
+    }
+    else
+    {
         // assume the "HOME" environment is exist
         if (chdir(getenv("HOME")))
             perror("chdir: Cannot find HOME environment in the list. ");
     }
 }
 
-void redirectOutput(char *outputFile) {
+void redirectOutput(char *outputFile)
+{
     printf("-----Found output redirect Flag-----\n");
     int fd;
     int openFlags = O_CREAT | O_WRONLY | O_TRUNC;
     mode_t filePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP |
-            S_IROTH | S_IWOTH; /* rw-rw-rw- */
+                       S_IROTH | S_IWOTH; /* rw-rw-rw- */
 
-    if ((fd = open(outputFile, openFlags, filePerms)) == -1) {
+    if ((fd = open(outputFile, openFlags, filePerms)) == -1)
+    {
         perror("couldn't open output file.");
         exit(0);
     }
@@ -230,13 +224,15 @@ void redirectOutput(char *outputFile) {
     close(fd);
 }
 
-void redirectInput(char *inputFile) {
+void redirectInput(char *inputFile)
+{
     printf("-----Found input redirect Flag-----\n");
     int fd;
     int openFlags = O_RDONLY;
     mode_t filePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH; /* rw-rw-rw- */
 
-    if ((fd = open(inputFile, openFlags, filePerms)) == -1) {
+    if ((fd = open(inputFile, openFlags, filePerms)) == -1)
+    {
         perror("Could not open input file.");
         exit(0);
     }
@@ -246,7 +242,8 @@ void redirectInput(char *inputFile) {
     close(fd);
 }
 
-void print_prompt() {
+void print_prompt()
+{
     printf("\n************************************************************************");
     printf("\n\n\n\t**** CS 340 ****");
     printf("\n\n\t- Self Study for System Programming -");
@@ -255,10 +252,11 @@ void print_prompt() {
     printf("\n\n\n\n************************************************************************");
 }
 
-void help_cmd() {
+void help_cmd()
+{
 }
 
-void debugIO(char *file) {
+void debugIO(char *file)
+{
     printf("\n --> File name found: %s\n", file);
 }
-
