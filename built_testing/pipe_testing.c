@@ -1,117 +1,179 @@
+/**
+ * To do list: (Inside .pdf file of the project directory)
+ * 
+ * Question to be asked: 
+ *  Did you do what present(steps) in the paper?
+ *  Do you understand what you are doing?
+ *  Can you explain the pprojects to judges? 
+ * 
+ * 
+ * 
+ * 
+ * 
+ **/
 
+#include <sys/wait.h>
+#include <err.h>
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
-#include <fcntl.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 
-/**
- * Executes the command "cat scores | grep Villanova | cut -b 1-10".
- * This quick-and-dirty version does no error checking.
- *
- * @author Jim Glenn
- * @version 0.1 10/4/2004
- */
+/* Set limits to the buffer, for storing the arguments */
+#define MAXLINE 4096
 
-int main(int argc, char **argv)
+/* Set limits to input arguments */
+#define MAXARGS 128
+
+/* Set the limits to store the path of target directory */
+#define PATH_MAX 256
+
+/* Set the READ_END and WRITE_END for pipe() system call*/
+#define READ_END 0
+#define WRITE_END 1
+
+/* Global variables here*/
+char *builtin_utilities[] = {"cd", "clear", "built-in"};
+char *inputFile;
+char *outputFile;
+int pipeFd[2];
+int pipeCounter;
+bool pipeFlag;
+
+/* Function declearation here */
+void parseArguments(char *, char **, char **);
+void launchShell(char **argv, char **argv2, char *buf);
+void cd_cmd(char *path);
+void redirectInput(char *inputFile);
+void redirectOutput(char *outputFile);
+void debugIO(char *file);
+void print_prompt();
+
+int main(void)
 {
-    int status;
-    int i;
+    pipeCounter = 0;
+    pipeFlag = false;
+    char buf[MAXLINE];    //init buffer size to the MAXLINE availiable
+    char *argv[MAXARGS];  //init the pointer to argv with the size of MAXARGS
+    char *argv2[MAXARGS]; //init the pointer to argv with the size of MAXARGS
+    char cwd[PATH_MAX];   //init the size of cwd(get the current directory) to PATH_MAX
+    // system("clear");
+    //    print_prompt();
 
-    // arguments for commands; your parser would be responsible for
-    // setting up arrays like these
+    /* print the prompt with a welcome text with the Name and current working directory */
+    printf("\n⚡ %s  ↔%s", getenv("HOSTNAME"), getcwd(cwd, sizeof(cwd)));
+    printf("\n Welcome to CS340 $ ");
 
-    char *cat_args[] = {"cat", "scores", NULL};
-    char *grep_args[] = {"grep", "Villanova", NULL};
-    char *cut_args[] = {"cut", "-b", "1-10", NULL};
-
-    // make 2 pipes (cat to grep and grep to cut); each has 2 fds
-
-    int pipes[4];
-    pipe(pipes);     // sets up 1st pipe
-    pipe(pipes + 2); // sets up 2nd pipe
-
-    // we now have 4 fds:
-    // pipes[0] = read end of cat->grep pipe (read by grep)
-    // pipes[1] = write end of cat->grep pipe (written by cat)
-    // pipes[2] = read end of grep->cut pipe (read by cut)
-    // pipes[3] = write end of grep->cut pipe (written by grep)
-
-    // Note that the code in each if is basically identical, so you
-    // could set up a loop to handle it.  The differences are in the
-    // indicies into pipes used for the dup2 system call
-    // and that the 1st and last only deal with the end of one pipe.
-
-    // fork the first child (to execute cat)
-
-    if (fork() == 0)
+    /* loops the stdin for any arguments */
+    while (fgets(buf, MAXLINE, stdin) != NULL)
     {
-        // replace cat's stdout with write part of 1st pipe
-
-        dup2(pipes[1], 1);
-
-        // close all pipes (very important!);
-        // end we're using was safely copied
-
-        close(pipes[0]);
-        close(pipes[1]);
-        close(pipes[2]);
-        close(pipes[3]);
-
-        execvp(*cat_args, cat_args);
-    }
-    else
-    {
-        // fork second child (to execute grep)
-
-        if (fork() == 0)
-        {
-            // replace grep's stdin with read end of 1st pipe
-
-            dup2(pipes[0], 0);
-
-            // replace grep's stdout with write end of 2nd pipe
-
-            dup2(pipes[3], 1);
-
-            // close all ends of pipes
-
-            close(pipes[0]);
-            close(pipes[1]);
-            close(pipes[2]);
-            close(pipes[3]);
-
-            execvp(*grep_args, grep_args);
-        }
+        /* parse each argv[] into different tokens and store inside buf */
+        parseArguments(buf, argv, argv2);
+        if ((strcmp(argv[0], "cd")) == 0) //flaged cd token found
+            cd_cmd(argv[1]);
         else
         {
-            // fork third child (to execute cut)
-
-            if (fork() == 0)
-            {
-                // replace cut's stdin with input read of 2nd pipe
-
-                dup2(pipes[2], 0);
-
-                // close all ends of pipes
-
-                close(pipes[0]);
-                close(pipes[1]);
-                close(pipes[2]);
-                close(pipes[3]);
-
-                execvp(*cut_args, cut_args);
-            }
+            printf("-----Found non-built-in Flag-----\n");
+            launchShell(argv, argv2, buf);
         }
+
+        printf("\n⚡ %s  ↔%s", getenv("HOSTNAME"), getcwd(cwd, sizeof(cwd)));
+        printf("\n Welcome to CS340 $ ");
+    }
+    return 0;
+}
+
+/**
+ * function to break input arugments into tokens
+ */
+void parseArguments(char *strBuf, char *inputVec[], char *inputVec2[])
+{
+    static char *sep = " \t\n\b\r\a"; //the arguments seperator (extra special char to be safe)
+    char *tok_start;
+    inputFile = NULL;
+    outputFile = NULL;
+    tok_start = strtok(strBuf, sep); //break the *strBuf into token using strtok
+
+    while (tok_start != NULL) //while reading the arguments
+    {
+        switch (*tok_start)
+        {
+        case '>':
+            tok_start = strtok(NULL, sep); //next char to be pick
+            outputFile = tok_start;
+            tok_start = strtok(NULL, sep); //next char to be pick
+            debugIO(outputFile);
+            break;
+
+        case '<':
+            tok_start = strtok(NULL, sep); //next char to be pick
+            inputFile = tok_start;
+            tok_start = strtok(NULL, sep); //next char to be pick
+            debugIO(inputFile);
+            break;
+
+        case '|':
+            //store the next arguments/commands after '|' notations
+            //hint: ->recursive the parseArgument() again to get the 2nd commands
+
+            pipe(pipeFd);
+            pipeCounter++;
+            pipeFlag = true;
+            tok_start = strtok(NULL, sep);
+            *inputVec2++ = tok_start;      //store the token into the input vector
+            tok_start = strtok(NULL, sep); //next char to be pick
+            if (tok_start != NULL)
+            {
+                *inputVec2++ = tok_start;
+                tok_start = strtok(NULL, sep); //next char to be pick
+            }
+            else
+                break;
+
+        default:
+            *inputVec++ = tok_start;       //store the token into the input vector
+            tok_start = strtok(NULL, sep); //next char to be pick
+        }
+        *inputVec = NULL;
+    }
+}
+
+void launchShell(char **argv, char **argv2, char *buf)
+{
+
+    pid_t pid;
+    int status;
+
+    if ((pid = fork()) == 0) //fork() successful
+    {                        /* child */
+        dup2(pipeFd[WRITE_END], STDOUT_FILENO);
+        close(pipeFd[READ_END]);
+        execvp(argv[0], argv);
+        err(127, "couldn't execute: %s", argv[0]);
+
+    } //2nd Child process
+    else if ((pid = fork()) == 0)
+    {
+        dup2(pipeFd[READ_END], STDIN_FILENO);
+        close(pipeFd[WRITE_END]);
+        execvp(argv2[0], argv2);
+        err(127, "couldn't execute: %s", argv2[0]);
     }
 
-    // only the parent gets here and waits for 3 children to finish
+    close(pipeFd[READ_END]);
+    close(pipeFd[WRITE_END]);
+    
+    if ((pid = waitpid(pid, &status, 0)) == -1)
+        err(1, "waitpid error");
 
-    close(pipes[0]);
-    close(pipes[1]);
-    close(pipes[2]);
-    close(pipes[3]);
-
-    for (i = 0; i < 3; i++)
-        wait(&status);
+    /*
+    if ((pid = waitpid(pid, &status, 0)) == -1)
+        err(1, "waitpid error");
+     */
 }

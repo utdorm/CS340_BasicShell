@@ -151,11 +151,18 @@ void launchShell(char **argv, char **argv2, char *buf)
     if (pipeFlag)
     {
         for (int i = 0; i < pipeCounter; i++)
-        {
-            if ((pid = fork()) == 0) //fork() successful
-            {                           /* child */
-                dup2(pipeFd[WRITE_END], STDOUT_FILENO);
+        {   /* child */
+            if ((pid = fork()) == 0)
+            {                     
+                if (dup2(pipeFd[WRITE_END], STDOUT_FILENO) == -1 ) {
+                    perror("dup2() failed");
+                }
                 close(pipeFd[READ_END]);
+                if (outputFile != NULL)
+                    redirectOutput(outputFile);
+
+                if (inputFile != NULL)
+                    redirectInput(inputFile);
                 execvp(argv[0], argv);
                 err(127, "couldn't execute: %s", argv[0]);
 
@@ -164,6 +171,11 @@ void launchShell(char **argv, char **argv2, char *buf)
             {
                 dup2(pipeFd[READ_END], STDIN_FILENO);
                 close(pipeFd[WRITE_END]);
+                if (outputFile != NULL)
+                    redirectOutput(outputFile);
+
+                if (inputFile != NULL)
+                    redirectInput(inputFile);
                 execvp(argv2[0], argv2);
                 err(127, "couldn't execute: %s", argv2[0]);
             }
@@ -176,10 +188,26 @@ void launchShell(char **argv, char **argv2, char *buf)
         }
     }
 
-    /*
-    if ((pid = waitpid(pid, &status, 0)) == -1)
-        err(1, "waitpid error");
-     */
+    else
+    {
+        if ((pid = fork()) == -1)
+            err(1, "fork error");
+        else if (pid == 0) //fork() successful
+        {                  /* child */
+            if (outputFile != NULL)
+                redirectOutput(outputFile);
+
+            if (inputFile != NULL)
+                redirectInput(inputFile);
+
+            execvp(argv[0], argv);
+            err(127, "couldn't execute: %s", argv[0]);
+        }
+
+        /* parent */
+        if ((pid = waitpid(pid, &status, 0)) == -1)
+            err(1, "waitpid error");
+    }
 }
 
 /**
