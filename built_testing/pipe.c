@@ -46,6 +46,7 @@ char *inputFile;
 char *outputFile;
 int pipeFd[2];
 int pipeCounter;
+bool pipeFlag;
 
 /* Function declearation here */
 void parseArguments(char *, char **, char **);
@@ -58,10 +59,10 @@ void print_prompt();
 
 int main(void) {
     pipeCounter = 0;
+    pipeFlag = false;
     char buf[MAXLINE]; //init buffer size to the MAXLINE availiable
     char *argv[MAXARGS]; //init the pointer to argv with the size of MAXARGS
     char *argv2[MAXARGS]; //init the pointer to argv with the size of MAXARGS
-
     char cwd[PATH_MAX]; //init the size of cwd(get the current directory) to PATH_MAX
     // system("clear");
     //    print_prompt();
@@ -74,7 +75,6 @@ int main(void) {
     while (fgets(buf, MAXLINE, stdin) != NULL) {
         /* parse each argv[] into different tokens and store inside buf */
         parseArguments(buf, argv, argv2);
-        int i;
         if ((strcmp(argv[0], "cd")) == 0) //flaged cd token found
             cd_cmd(argv[1]);
         else {
@@ -139,33 +139,36 @@ void parseArguments(char *strBuf, char *inputVec[], char *inputVec2[]) {
 }
 
 void launchShell(char **argv, char **argv2, char *buf) {
-    pid_t _1_pid, _2_pid;
+    pid_t _1_pid;
     int status;
-    if ((_1_pid = fork()) == 0) //fork() successful
+    if (pipeFlag) {
+        for (int i = 0; i < pipeCounter; i++) {
+if ((_1_pid = fork()) == 0) //fork() successful
     { /* child */
         dup2(pipeFd[WRITE_END], STDOUT_FILENO);
-
-
-	close(pipeFd[READ_END]);
+	    close(pipeFd[READ_END]);
         execvp(argv[0], argv);
-
         err(127, "couldn't execute: %s", argv[0]);
 
     }//2nd Child process
-    if ((_2_pid = fork()) == 0) {
+    else if ((_1_pid = fork()) == 0) {
         dup2(pipeFd[READ_END], STDIN_FILENO);
-
-	close(pipeFd[WRITE_END]);
+	    close(pipeFd[WRITE_END]);
         execvp(argv2[0], argv2);
-
         err(127, "couldn't execute: %s", argv2[0]);     
     }
 
     close(pipeFd[READ_END]);
     close(pipeFd[WRITE_END]);
 
-    for (int i = 0; i < 2; i++)
-        wait(&status);
+    if ((_1_pid = waitpid(_1_pid, &status, 0)) == -1)
+        err(1, "waitpid error");
+     
+    
+        
+        }
+        }
+    
 
     /*
     if ((pid = waitpid(pid, &status, 0)) == -1)
