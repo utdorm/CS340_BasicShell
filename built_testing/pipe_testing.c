@@ -125,6 +125,7 @@ void parseArguments(char *strBuf, char *inputVec[], char *inputVec2[])
             pipe(pipeFd);
             pipeCounter++;
             pipeFlag = true;
+            
             tok_start = strtok(NULL, sep);
             *inputVec2++ = tok_start;      //store the token into the input vector
             tok_start = strtok(NULL, sep); //next char to be pick
@@ -146,10 +147,9 @@ void parseArguments(char *strBuf, char *inputVec[], char *inputVec2[])
 
 void launchShell(char **argv, char **argv2, char *buf)
 {
-
     pid_t pid;
     int status;
-
+    
     if ((pid = fork()) == 0) //fork() successful
     {                        /* child */
         dup2(pipeFd[WRITE_END], STDOUT_FILENO);
@@ -157,7 +157,9 @@ void launchShell(char **argv, char **argv2, char *buf)
         execvp(argv[0], argv);
         err(127, "couldn't execute: %s", argv[0]);
 
-    } //2nd Child process
+    } 
+
+    //2nd Child process
     else if ((pid = fork()) == 0)
     {
         dup2(pipeFd[READ_END], STDIN_FILENO);
@@ -176,4 +178,85 @@ void launchShell(char **argv, char **argv2, char *buf)
     if ((pid = waitpid(pid, &status, 0)) == -1)
         err(1, "waitpid error");
      */
+}
+
+
+
+/**
+ * 
+ * 
+ * Simple cd commend for built-in
+ * return the path if exist, else return to HOME 
+ * 
+ */
+void cd_cmd(char *path)
+{
+    printf("-----Found cd Flag-----\n");
+    if (path)
+    {
+        if (chdir(path) != 0)
+            perror("chdir err");
+    }
+    else
+    {
+        // assume the "HOME" environment is exist
+        if (chdir(getenv("HOME")))
+            perror("chdir: Cannot find HOME environment in the list. ");
+    }
+}
+
+void redirectOutput(char *outputFile)
+{
+    printf("-----Found output redirect Flag-----\n");
+    int fd;
+    int openFlags = O_CREAT | O_WRONLY | O_TRUNC;
+    mode_t filePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP |
+                       S_IROTH | S_IWOTH; /* rw-rw-rw- */
+
+    if ((fd = open(outputFile, openFlags, filePerms)) == -1)
+    {
+        perror("couldn't open output file.");
+        exit(0);
+    }
+
+    if (dup2(fd, STDOUT_FILENO) == -1)
+        fprintf(stderr, "dup2() failed");
+    close(fd);
+}
+
+void redirectInput(char *inputFile)
+{
+    printf("-----Found input redirect Flag-----\n");
+    int fd;
+    int openFlags = O_RDONLY;
+    mode_t filePerms = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH; /* rw-rw-rw- */
+
+    if ((fd = open(inputFile, openFlags, filePerms)) == -1)
+    {
+        perror("Could not open input file.");
+        exit(0);
+    }
+
+    if (dup2(fd, STDIN_FILENO) == -1)
+        fprintf(stderr, "dup2 failed");
+    close(fd);
+}
+
+void print_prompt()
+{
+    printf("\n************************************************************************");
+    printf("\n\n\n\t**** CS 340 ****");
+    printf("\n\n\t- Self Study for System Programming -");
+    printf("\n\n\t- Minimal Shell | Sokrattanak Utdorm Em -");
+    printf("\n\n\t- Instructor; Lior Kadosh -");
+    printf("\n\n\n\n************************************************************************");
+}
+
+void help_cmd()
+{
+}
+
+void debugIO(char *file)
+{
+    printf("\n --> File name found: %s\n", file);
 }
