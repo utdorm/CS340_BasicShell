@@ -125,7 +125,7 @@ void parseArguments(char *strBuf, char *inputVec[], char *inputVec2[])
             pipe(pipeFd);
             pipeCounter++;
             pipeFlag = true;
-            
+
             tok_start = strtok(NULL, sep);
             *inputVec2++ = tok_start;      //store the token into the input vector
             tok_start = strtok(NULL, sep); //next char to be pick
@@ -156,9 +156,9 @@ void launchShell(char **argv, char **argv2, char *buf)
         close(pipeFd[READ_END]);
         execvp(argv[0], argv);
         err(127, "couldn't execute: %s", argv[0]);
-
     } 
 
+    
     //2nd Child process
     else if ((pid = fork()) == 0)
     {
@@ -177,8 +177,9 @@ void launchShell(char **argv, char **argv2, char *buf)
     /*
     if ((pid = waitpid(pid, &status, 0)) == -1)
         err(1, "waitpid error");
-     */
+    */
 }
+
 
 
 
