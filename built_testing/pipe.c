@@ -57,8 +57,7 @@ void print_prompt();
 
 int main(void)
 {
-    pipeCounter = 0;
-    pipeFlag = false;
+    
     char buf[MAXLINE];    //init buffer size to the MAXLINE availiable
     char *argv[MAXARGS];  //init the pointer to argv with the size of MAXARGS
     char *argv2[MAXARGS]; //init the pointer to argv with the size of MAXARGS
@@ -73,6 +72,8 @@ int main(void)
     /* loops the stdin for any arguments */
     while (fgets(buf, MAXLINE, stdin) != NULL)
     {
+        pipeCounter = 0;
+        pipeFlag = false;
         /* parse each argv[] into different tokens and store inside buf */
         parseArguments(buf, argv, argv2);
         if ((strcmp(argv[0], "cd")) == 0) //flaged cd token found
@@ -148,7 +149,9 @@ void launchShell(char **argv, char **argv2, char *buf)
 {
     pid_t pid;
     int status;
-    if (pipeFlag)
+    
+    printf("%d\n ", pipeFlag);
+    if (pipeFlag == true)
     {
         for (int i = 0; i < pipeCounter; i++)
         {   /* child */
