@@ -1,0 +1,7 @@
+*.txt
+.vscode
+*.exe
+*.stackdump
+/built_testing/*.stackdump
+/built_testing/a
+
