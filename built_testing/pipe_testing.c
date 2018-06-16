@@ -183,28 +183,6 @@ void launchShell(char **argv, char **argv2, char *buf)
 
 
 
-/**
- * 
- * 
- * Simple cd commend for built-in
- * return the path if exist, else return to HOME 
- * 
- */
-void cd_cmd(char *path)
-{
-    printf("-----Found cd Flag-----\n");
-    if (path)
-    {
-        if (chdir(path) != 0)
-            perror("chdir err");
-    }
-    else
-    {
-        // assume the "HOME" environment is exist
-        if (chdir(getenv("HOME")))
-            perror("chdir: Cannot find HOME environment in the list. ");
-    }
-}
 
 void redirectOutput(char *outputFile)
 {
@@ -251,6 +229,30 @@ void print_prompt()
     printf("\n\n\t- Minimal Shell | Sokrattanak Utdorm Em -");
     printf("\n\n\t- Instructor; Lior Kadosh -");
     printf("\n\n\n\n************************************************************************");
+}
+
+
+/**
+ * 
+ * 
+ * Simple cd commend for built-in
+ * return the path if exist, else return to HOME 
+ * 
+ */
+void cd_cmd(char *path)
+{
+    printf("-----Found cd Flag-----\n");
+    if (path)
+    {
+        if (chdir(path) != 0)
+            perror("chdir err");
+    }
+    else
+    {
+        // assume the "HOME" environment is exist
+        if (chdir(getenv("HOME")))
+            perror("chdir: Cannot find HOME environment in the list. ");
+    }
 }
 
 void help_cmd()
