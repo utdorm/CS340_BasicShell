@@ -61,7 +61,6 @@ void _fork_pipeline(pid_t pid, int status, char **argv, char **argv2, char *buf)
 void _fork_without_pipeline(pid_t pid, int status, char **argv, char **argv2, char *buf);
 
 
-
 int main(void)
 {
     char buf[MAXLINE];   //init buffer size to the MAXLINE availiable
