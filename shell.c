@@ -71,7 +71,7 @@ int main(void)
     // print_prompt();
 
     /* print the prompt with a welcome text with the Name and current working directory */
-    printf("\n⚡ %s  ↔%s", getenv("HOSTNAME"), getcwd(cwd, sizeof(cwd)));
+    printf("\n⚡ %s  ↔%s", getenv("USERDOMAIN"), getcwd(cwd, sizeof(cwd)));
     printf("\n Welcome to CS340 $ ");
 
     /* loops the stdin for any arguments */
@@ -86,11 +86,10 @@ int main(void)
 
         else
         {
-            printf("-----Found non-built-in Flag-----\n");
             launchShell(buf, argv, argv2);
         }
 
-        printf("\n⚡ %s  ↔%s", getenv("HOSTNAME"), getcwd(cwd, sizeof(cwd)));
+        printf("\n⚡ %s  ↔%s", getenv("USERDOMAIN"), getcwd(cwd, sizeof(cwd)));
         printf("\n Welcome to CS340 $ ");
     }
     return 0;

@@ -85,6 +85,7 @@ void parseArguments(char *strBuf, char *inputVec[], char *inputVec2[])
 
     outputFile = NULL;
     outputFile2 = NULL;
+    
     pipeFlag = false;
     tok_start = strtok(strBuf, sep); //break the *strBuf into token using strtok
 
