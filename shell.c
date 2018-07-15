@@ -233,8 +233,15 @@ void cd_cmd(char *path)
 {
     if (path)
     {
-        if (chdir(path) != 0)
+        if(strcmp(path, "~") == 0){
+            if (chdir(getenv("HOME")))
+            perror("chdir: Cannot find HOME environment in the list. ");
+        }
+        
+        else{
+            if (chdir(path) != 0)
             perror("chdir err");
+        }
     }
     else
     {

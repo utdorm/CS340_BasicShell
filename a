@@ -1,0 +1,12 @@
+total 117
+drwxrwx---+ 1 User None      0 Jul 12 17:17 .
+drwxrwx---+ 1 User None      0 Jul 12 16:35 ..
+drwxrwx---+ 1 User None      0 Jul 11 16:01 .git
+-rwxrwx---+ 1 User None     77 Jun 12 08:31 .gitignore
+drwxrwx---+ 1 User None      0 Apr 23 13:46 .vscode
+-rw-rw-r--+ 1 User None      0 Jul 12 17:17 a
+-rwxrwx---+ 1 User None    867 Apr  2 15:55 basic.txt
+drwxrwx---+ 1 User None      0 Jul  1 21:11 built_testing
+-rwxrwx---+ 1 User None   7610 Jul 12 17:09 shell.c
+-rwxrwxr-x+ 1 User None 164606 Jul 12 17:13 shell.exe
+-rwxrwx---+ 1 User None   8037 Jul 12 11:40 shell2.c
